@@ -1,0 +1,1565 @@
+<div id="optimizationInfo" class="optimization-info hidden">
+            <h4 class="font-semibold text-blue-800 mb-2">JS Compression Analysis:</h4>
+            <p id="subsetInfo" class="text-sm"></p>
+            <p id="costInfo" class="text-sm"></p>
+        </div><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAN3 Codec Intégré - Compression C + Décompression JS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 1400px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .drop-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        .drop-area.highlight {
+            background-color: #e0f2fe;
+            border-color: #3b82f6;
+        }
+        .drop-area p {
+            color: #6b7280;
+            margin-top: 10px;
+        }
+        .file-input {
+            display: none;
+        }
+        .file-name {
+            font-size: 0.9em;
+            color: #6b7280;
+            margin-top: 10px;
+        }
+        .controls-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .action-button-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .action-button {
+            background-color: #4f46e5;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+            border: none;
+            cursor: pointer;
+        }
+        .action-button:hover {
+            background-color: #4338ca;
+            transform: translateY(-2px);
+        }
+        .action-button:active {
+            transform: translateY(0);
+        }
+        .action-button:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .download-button {
+            background-color: #10b981;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+            border: none;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .download-button:hover {
+            background-color: #059669;
+            transform: translateY(-2px);
+        }
+        .download-button:active {
+            transform: translateY(0);
+        }
+        .download-button:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .result-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        @media (min-width: 768px) {
+            .result-section {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        @media (min-width: 1024px) {
+            .result-section {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+        }
+        .result-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 150px;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+        .result-box h3 {
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #334155;
+        }
+        .result-box pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 0.85em;
+            color: #475569;
+        }
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .status-message.success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .status-message.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .status-message.info {
+            background-color: #e0f2fe;
+            color: #0369a1;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #4f46e5;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .optimization-info {
+            background-color: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 0.9em;
+        }
+        .debug-panel {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 0.85em;
+        }
+        .cost-analysis {
+            background-color: #ecfdf5;
+            border: 1px solid #10b981;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 0.85em;
+        }
+        .warning-panel {
+            background-color: #fef2f2;
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 0.85em;
+        }
+        .integration-info {
+            background-color: #f0fdf4;
+            border: 1px solid #22c55e;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="text-3xl font-bold text-gray-800">DAN3 Codec Intégré</h1>
+            <p class="text-gray-600 mt-2">Compression C/Wasm + JS | Décompression JavaScript</p>
+            <div class="integration-info">
+                <h4 class="font-semibold text-green-800 mb-2">🔧 Solution Hybride Complète</h4>
+                <p class="text-sm">Compression C/Wasm (rapide) + Compression JS (fallback) + Décompression JavaScript (stable)</p>
+            </div>
+        </header>
+
+        <div id="dropArea" class="drop-area">
+            <input type="file" id="fileInput" class="file-input" accept=".bin, .dat, .txt, .js, .json, .css, .html, .xml, .log, .csv, .md">
+            <label for="fileInput" class="text-indigo-600 font-semibold cursor-pointer">
+                Drag & Drop your file here
+            </label>
+            <p>or click to select a file</p>
+            <p class="text-xs text-gray-500 mt-1">Limite: 256KB</p>
+            <span id="fileName" class="file-name">No file chosen</span>
+        </div>
+
+        <div class="controls-group">
+            <div class="control-item">
+                <input type="checkbox" id="verboseFlag" class="form-checkbox h-5 w-5 text-indigo-600 rounded">
+                <label for="verboseFlag" class="text-gray-700">Verbose</label>
+            </div>
+            <div class="control-item">
+                <input type="checkbox" id="rleFlag" class="form-checkbox h-5 w-5 text-indigo-600 rounded" checked>
+                <label for="rleFlag" class="text-gray-700">Enable RLE</label>
+            </div>
+            <div class="control-item">
+                <input type="checkbox" id="fastFlag" class="form-checkbox h-5 w-5 text-indigo-600 rounded">
+                <label for="fastFlag" class="text-gray-700">Fast Mode</label>
+            </div>
+            <div class="control-item">
+                <input type="checkbox" id="debugFlag" class="form-checkbox h-5 w-5 text-indigo-600 rounded">
+                <label for="debugFlag" class="text-gray-700">JS Debug Mode</label>
+            </div>
+            <div class="control-item">
+                <label for="maxBitsInput" class="text-gray-700">Max Offset Bits:</label>
+                <input type="number" id="maxBitsInput" min="9" max="16" value="16" class="ml-2 w-16 px-2 py-1 border rounded">
+            </div>
+        </div>
+
+        <div class="action-button-group">
+            <button id="compressCButton" class="action-button" disabled>🚀 Compress (C/Wasm)</button>
+            <button id="compressJSButton" class="action-button" disabled>🔧 Compress (JS Fallback)</button>
+            <button id="decompressJSButton" class="action-button" disabled>📦 Decompress (JS)</button>
+        </div>
+
+        <div id="progressContainer" class="hidden">
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <p id="progressText" class="text-center text-sm text-gray-600"></p>
+        </div>
+
+        <div id="debugInfo" class="debug-panel hidden">
+            <h4 class="font-semibold text-amber-800 mb-2">Debug Information:</h4>
+            <pre id="debugText" class="text-xs overflow-x-auto"></pre>
+        </div>
+
+        <div class="action-button-group">
+            <button id="downloadCompressedButton" class="download-button" disabled>Download Compressed (.dan3)</button>
+        </div>
+
+        <div id="statusMessage" class="status-message hidden"></div>
+
+        <div class="result-section">
+            <div class="result-box">
+                <h3>Original Data (Hex)</h3>
+                <pre id="originalDataHex"></pre>
+                <p class="text-sm text-gray-500 mt-2">Size: <span id="originalSize">0</span> bytes</p>
+                <p class="text-sm text-gray-500">CRC-32: <span id="originalCrc">N/A</span></p>
+            </div>
+            <div class="result-box">
+                <h3>Compressed Data (Hex)</h3>
+                <pre id="compressedDataHex"></pre>
+                <p class="text-sm text-gray-500 mt-2">Size: <span id="compressedSize">0</span> bytes</p>
+                <p class="text-sm text-gray-500">Ratio: <span id="compressionRatio">0.00%</span></p>
+            </div>
+            <div class="result-box">
+                <h3>Decompressed Data (Hex)</h3>
+                <pre id="decompressedDataHex"></pre>
+                <p class="text-sm text-gray-500 mt-2">Size: <span id="decompressedSize">0</span> bytes</p>
+                <p class="text-sm text-gray-500">CRC-32: <span id="decompressedCrc">N/A</span></p>
+            </div>
+            <div class="result-box">
+                <h3>Validation Result</h3>
+                <pre id="validationResult"></pre>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <p id="modalMessage"></p>
+        </div>
+    </div>
+
+    <script src="./dan3final.js"></script>
+    <script>
+        let cModule; // Module C/Wasm
+        const C_MAX_FALLBACK = 256 * 1024; // 256KB
+
+        /**
+         * DAN3 Codec JavaScript - Compression ET Décompression
+         */
+        class DAN3CodecDebug {
+            constructor() {
+                // Constants from C implementation
+                this.MAX = 256 * 1024; // 256KB
+                this.BIT_GOLOMG_MAX = 7;
+                this.MAX_GAMMA = (1 << (this.BIT_GOLOMG_MAX + 1)) - 2;
+                this.BIT_OFFSET00 = 0;
+                this.BIT_OFFSET0 = 1;
+                this.BIT_OFFSET1 = 5;
+                this.BIT_OFFSET2 = 8;
+                this.BIT_OFFSET_MIN = 9;
+                this.BIT_OFFSET_MAX = 16;
+                this.BIT_OFFSET_NBR = this.BIT_OFFSET_MAX - this.BIT_OFFSET_MIN + 1;
+                this.MAX_OFFSET00 = (1 << this.BIT_OFFSET00);
+                this.MAX_OFFSET0 = (1 << this.BIT_OFFSET0) + this.MAX_OFFSET00;
+                this.MAX_OFFSET1 = (1 << this.BIT_OFFSET1);
+                this.MAX_OFFSET2 = (1 << this.BIT_OFFSET2) + this.MAX_OFFSET1;
+                this.MAX_OFFSET = (1 << this.BIT_OFFSET_MAX) + this.MAX_OFFSET2;
+                this.RAW_MIN = 1;
+                this.RAW_RANGE = (1 << 8);
+                this.RAW_MAX = this.RAW_MIN + this.RAW_RANGE - 1;
+
+                // Global variables
+                this.BIT_OFFSET3 = 0;
+                this.MAX_OFFSET3 = 0;
+                this.BIT_OFFSET_MAX_ALLOWED = this.BIT_OFFSET_MAX;
+                this.BIT_OFFSET_NBR_ALLOWED = this.BIT_OFFSET_NBR;
+
+                this.bVerbose = false;
+                this.bYes = false;
+                this.bFAST = false;
+                this.bRLE = true;
+                this.bDebug = false;
+
+                this.data_src = new Uint8Array(this.MAX);
+                this.index_src = 0;
+                this.data_dest = new Uint8Array(this.MAX);
+                this.index_dest = 0;
+                this.bit_mask = 0;
+                this.bit_index = 0;
+
+                // Match table
+                this.matches = new Array(65536);
+                for (let i = 0; i < 65536; i++) {
+                    this.matches[i] = { index: -1, next: null };
+                }
+
+                // Optimals table - using typed arrays
+                this.optimals_bits = new Uint32Array(this.MAX * this.BIT_OFFSET_NBR);
+                this.optimals_offset = new Uint16Array(this.MAX * this.BIT_OFFSET_NBR);
+                this.optimals_len = new Uint8Array(this.MAX * this.BIT_OFFSET_NBR);
+
+                // Debug and analysis data
+                this.debugLog = [];
+                this.compressionStats = {
+                    bestSubset: -1,
+                    subsetCosts: [],
+                    totalMatches: 0,
+                    literalCount: 0,
+                    rleCount: 0,
+                    matchCount: 0,
+                    costBreakdown: {},
+                    decisionLog: []
+                };
+            }
+
+            log(message) {
+                if (this.bDebug) {
+                    this.debugLog.push(message);
+                    if (this.bVerbose) {
+                        console.log(message);
+                    }
+                }
+            }
+
+            // Bit I/O functions
+            read_byte() {
+                return this.data_src[this.index_src++];
+            }
+
+            read_bit() {
+                let bit;
+                if (this.bit_mask === 0) {
+                    this.bit_mask = 128;
+                    this.bit_index = this.index_src;
+                    this.index_src++;
+                }
+                bit = (this.data_src[this.bit_index] & this.bit_mask);
+                this.bit_mask >>= 1;
+                return (bit !== 0 ? 1 : 0);
+            }
+
+            read_golomb_gamma() {
+                let value = 0;
+                let i, j = 0;
+                while (j < this.BIT_GOLOMG_MAX && this.read_bit() === 0) {
+                    j++;
+                }
+                if (j < this.BIT_GOLOMG_MAX) {
+                    value = 1;
+                    for (i = 0; i <= j; i++) {
+                        value <<= 1;
+                        value |= this.read_bit();
+                    }
+                }
+                value--;
+                return value;
+            }
+
+            write_byte(value) {
+                this.data_dest[this.index_dest++] = value & 0xFF;
+            }
+
+            write_bit(value) {
+                if (this.bit_mask === 0) {
+                    this.bit_mask = 128;
+                    this.bit_index = this.index_dest;
+                    this.write_byte(0);
+                }
+                if (value) {
+                    this.data_dest[this.bit_index] |= this.bit_mask;
+                }
+                this.bit_mask >>= 1;
+            }
+
+            write_bits(value, size) {
+                let i;
+                let mask = 1;
+                for (i = 0 ; i < size ; i++) {
+                    mask <<= 1;
+                }
+                while (mask > 1) {
+                    mask >>= 1;
+                    this.write_bit (value & mask);
+                }
+            }
+
+            write_golomb_gamma(value) {
+                let i;
+                value++;
+                for (i = 4; i <= value; i <<= 1) {
+                    this.write_bit(0);
+                }
+                while ((i >>= 1) > 0) {
+                    this.write_bit(value & i);
+                }
+            }
+
+            write_offset(value, option) {
+                value--;
+                if (option === 1) {
+                    if (value >= this.MAX_OFFSET00) {
+                        this.write_bit(1);
+                        value -= this.MAX_OFFSET00;
+                        this.write_bits(value, this.BIT_OFFSET0);
+                    } else {
+                        this.write_bit(0);
+                        this.write_bits(value, this.BIT_OFFSET00);
+                    }
+                } else {
+                    if (value >= this.MAX_OFFSET2) {
+                        this.write_bit(1);
+                        this.write_bit(1);
+                        value -= this.MAX_OFFSET2;
+                        this.write_bits(value >> this.BIT_OFFSET2, this.BIT_OFFSET3 - this.BIT_OFFSET2);
+                        this.write_byte(value & 0xFF);
+                    } else {
+                        if (value >= this.MAX_OFFSET1) {
+                            this.write_bit(0);
+                            value -= this.MAX_OFFSET1;
+                            this.write_byte(value & 0xFF);
+                        } else {
+                            this.write_bit(1);
+                            this.write_bit(0);
+                            this.write_bits(value, this.BIT_OFFSET1);
+                        }
+                    }
+                }
+            }
+
+            write_doublet(length, offset) {
+                this.write_bit(0);
+                this.write_golomb_gamma(length);
+                this.write_offset(offset, length);
+            }
+
+            write_end() {
+                this.write_bit(0);
+                this.write_bits(0, this.BIT_GOLOMG_MAX);
+                this.write_bit(0);
+            }
+
+            write_literals_length(length) {
+                this.write_bit(0);
+                this.write_bits(0, this.BIT_GOLOMG_MAX);
+                this.write_bit(1);
+                length -= this.RAW_MIN;
+                this.write_byte(length);
+            }
+
+            write_literal(c) {
+                this.write_bit(1);
+                this.write_byte(c);
+            }
+
+            // Match table management
+            insert_match(matchNode, index) {
+                const newMatch = { index: matchNode.index, next: matchNode.next };
+                matchNode.index = index;
+                matchNode.next = newMatch;
+            }
+
+            flush_match(headNode) {
+                let currentNode = headNode.next;
+                while (currentNode !== null) {
+                    const nodeToFree = currentNode;
+                    currentNode = currentNode.next;
+                    nodeToFree.next = null;
+                    nodeToFree.index = -1;
+                }
+                headNode.next = null;
+                headNode.index = -1;
+            }
+
+            reset_matches() {
+                for (let i = 0; i < 65536; i++) {
+                    this.flush_match(this.matches[i]);
+                    this.matches[i].index = -1;
+                }
+            }
+
+            golomb_gamma_bits(value) {
+                let bits = 0;
+                value++;
+                while (value > 1) {
+                    bits += 2;
+                    value >>= 1;
+                }
+                return bits;
+            }
+
+            count_bits(offset, len) {
+                let bits = 1 + this.golomb_gamma_bits(len);
+                
+                if (len === 1) {
+                    if (this.BIT_OFFSET00 === -1) {
+                        const result = bits + this.BIT_OFFSET0;
+                        this.log(`count_bits(${offset}, ${len}) = ${result} [len=1, BIT_OFFSET00=-1]`);
+                        return result;
+                    } else {
+                        const offsetBits = (offset > this.MAX_OFFSET00 ? this.BIT_OFFSET0 : this.BIT_OFFSET00);
+                        const result = bits + 1 + offsetBits;
+                        this.log(`count_bits(${offset}, ${len}) = ${result} [len=1, offset>${this.MAX_OFFSET00}? ${offset > this.MAX_OFFSET00}]`);
+                        return result;
+                    }
+                }
+
+                let offsetCost;
+                if (offset > this.MAX_OFFSET2) {
+                    offsetCost = 1 + this.BIT_OFFSET3;
+                    this.log(`count_bits(${offset}, ${len}) offset > MAX_OFFSET2(${this.MAX_OFFSET2}), using BIT_OFFSET3=${this.BIT_OFFSET3}`);
+                } else if (offset > this.MAX_OFFSET1) {
+                    offsetCost = this.BIT_OFFSET2;
+                    this.log(`count_bits(${offset}, ${len}) offset > MAX_OFFSET1(${this.MAX_OFFSET1}), using BIT_OFFSET2=${this.BIT_OFFSET2}`);
+                } else {
+                    offsetCost = 1 + this.BIT_OFFSET1;
+                    this.log(`count_bits(${offset}, ${len}) offset <= MAX_OFFSET1(${this.MAX_OFFSET1}), using BIT_OFFSET1=${this.BIT_OFFSET1}`);
+                }
+
+                const result = bits + 1 + offsetCost;
+                this.log(`count_bits(${offset}, ${len}) = ${result} [gamma=${this.golomb_gamma_bits(len)}, offset_cost=${offsetCost}]`);
+                return result;
+            }
+
+            set_BIT_OFFSET3(i) {
+                this.BIT_OFFSET3 = this.BIT_OFFSET_MIN + i;
+                this.MAX_OFFSET3 = (1 << this.BIT_OFFSET3) + this.MAX_OFFSET2;
+                this.log(`set_BIT_OFFSET3(${i}): BIT_OFFSET3=${this.BIT_OFFSET3}, MAX_OFFSET3=${this.MAX_OFFSET3}`);
+            }
+
+            update_optimal(index, len, offset) {
+                let cost;
+                let decisions = [];
+                
+                for (let i = this.BIT_OFFSET_NBR_ALLOWED - 1; i >= 0; i--) {
+                    const flatIndex = index * this.BIT_OFFSET_NBR + i;
+                    const prevBits = this.optimals_bits[flatIndex];
+                    
+                    if (offset === 0) { // Literal or RLE
+                        if (index > 0) {
+                            const prevFlatIndex = (index - 1) * this.BIT_OFFSET_NBR + i;
+                            const prevLenFlatIndex = (index - len) * this.BIT_OFFSET_NBR + i;
+
+                            if (len === 1) {
+                                cost = this.optimals_bits[prevFlatIndex] + 1 + 8;
+                                if (this.optimals_bits[flatIndex] > cost) {
+                                    decisions.push(`Subset ${i}: Literal at ${index}, cost ${prevBits} -> ${cost}`);
+                                    this.optimals_bits[flatIndex] = cost;
+                                    this.optimals_offset[flatIndex] = 0;
+                                    this.optimals_len[flatIndex] = 1;
+                                }
+                            } else {
+                                cost = this.optimals_bits[prevLenFlatIndex] + 1 + this.BIT_GOLOMG_MAX + 1 + 8 + len * 8;
+                                if (this.optimals_bits[flatIndex] > cost) {
+                                    decisions.push(`Subset ${i}: RLE len=${len} at ${index}, cost ${prevBits} -> ${cost}`);
+                                    this.optimals_bits[flatIndex] = cost;
+                                    this.optimals_offset[flatIndex] = 0;
+                                    this.optimals_len[flatIndex] = len;
+                                }
+                            }
+                        } else {
+                            this.optimals_bits[flatIndex] = 8;
+                            this.optimals_offset[flatIndex] = 0;
+                            this.optimals_len[flatIndex] = 1;
+                            decisions.push(`Subset ${i}: First byte at ${index}, cost = 8`);
+                        }
+                    } else { // Match
+                        if (offset > index) {
+                            continue;
+                        }
+
+                        if (offset > this.MAX_OFFSET1) {
+                            this.set_BIT_OFFSET3(i);
+                            if (offset > this.MAX_OFFSET3) {
+                                decisions.push(`Subset ${i}: Offset ${offset} > MAX_OFFSET3 ${this.MAX_OFFSET3}, skipping`);
+                                continue;
+                            }
+                        }
+                        
+                        const prevMatchFlatIndex = (index - len) * this.BIT_OFFSET_NBR + i;
+                        cost = this.optimals_bits[prevMatchFlatIndex] + this.count_bits(offset, len);
+                        if (this.optimals_bits[flatIndex] > cost) {
+                            decisions.push(`Subset ${i}: Match len=${len} offset=${offset} at ${index}, cost ${prevBits} -> ${cost}`);
+                            this.optimals_bits[flatIndex] = cost;
+                            this.optimals_offset[flatIndex] = offset;
+                            this.optimals_len[flatIndex] = len;
+                        }
+                    }
+                }
+
+                if (this.bDebug && decisions.length > 0) {
+                    this.compressionStats.decisionLog.push({
+                        index: index,
+                        len: len,
+                        offset: offset,
+                        decisions: decisions
+                    });
+                }
+            }
+
+            findMatches(pos, prev_match_index) {
+                this.log(`=== Finding matches at position ${pos} ===`);
+                
+                // LZ MATCH OF 1
+                const maxSingleOffset = Math.min(
+                    this.BIT_OFFSET00 === -1 ? (1 << this.BIT_OFFSET0) : this.MAX_OFFSET0,
+                    pos
+                );
+
+                this.log(`Single byte matches: max_offset=${maxSingleOffset}`);
+                let singleMatches = 0;
+                for (let k = 1; k <= maxSingleOffset; k++) {
+                    if (this.data_src[pos] === this.data_src[pos - k]) {
+                        this.update_optimal(pos, 1, k);
+                        singleMatches++;
+                    }
+                }
+                this.log(`Found ${singleMatches} single-byte matches`);
+
+                // LZ MATCH OF 2+
+                if (pos > 0) {
+                    const match_index = ((this.data_src[pos - 1] & 0xFF) << 8) | (this.data_src[pos] & 0xFF);
+                    let matchNode = this.matches[match_index];
+
+                    const optimalPosMinus1_flatIndex_0 = (pos - 1) * this.BIT_OFFSET_NBR + 0;
+                    if (prev_match_index === match_index && this.bFAST === true && 
+                        this.optimals_offset[optimalPosMinus1_flatIndex_0] === 1 && this.optimals_len[optimalPosMinus1_flatIndex_0] > 2) {
+                        
+                        const len = this.optimals_len[optimalPosMinus1_flatIndex_0];
+                        if (len < this.MAX_GAMMA) {
+                            this.log(`FAST optimization: extending previous match len=${len} -> ${len+1}`);
+                            this.update_optimal(pos, len + 1, 1);
+                        }
+                    } else {
+                        let best_len = 1;
+                        let currentMatch = matchNode;
+                        let matchesFound = 0;
+                        
+                        while (currentMatch.next !== null) {
+                            currentMatch = currentMatch.next;
+                            const offset = pos - currentMatch.index;
+
+                            if (offset > this.MAX_OFFSET) {
+                                this.log(`Offset ${offset} > MAX_OFFSET ${this.MAX_OFFSET}, flushing matches`);
+                                this.flush_match(matchNode);
+                                break;
+                            }
+
+                            for (let len = 2; len <= this.MAX_GAMMA; len++) {
+                                this.update_optimal(pos, len, offset);
+                                best_len = len;
+                                
+                                if (pos < offset + len || 
+                                    this.data_src[pos - len] !== this.data_src[pos - len - offset]) {
+                                    break;
+                                }
+                            }
+
+                            matchesFound++;
+                            if (this.bFAST && best_len > 255) {
+                                this.log(`FAST mode: best_len=${best_len} > 255, breaking early`);
+                                break;
+                            }
+                        }
+                        this.log(`Found ${matchesFound} multi-byte match sources, best_len=${best_len}`);
+                    }
+
+                    this.insert_match(this.matches[match_index], pos);
+                    return match_index;
+                }
+                return -1;
+            }
+
+            cleanup_optimals(subset) {
+                let j;
+                let i = this.index_src - 1;
+                let len_val;
+
+                this.log(`=== Cleaning up optimals for subset ${subset} ===`);
+                while (i > 1) {
+                    const flatIndex = i * this.BIT_OFFSET_NBR + subset;
+                    len_val = this.optimals_len[flatIndex];
+                    this.log(`Position ${i}: len=${len_val}, clearing positions ${i-len_val+1} to ${i-1}`);
+                    for (j = i - 1; j > i - len_val; j--) {
+                        const cleanupFlatIndex = j * this.BIT_OFFSET_NBR + subset;
+                        this.optimals_offset[cleanupFlatIndex] = 0;
+                        this.optimals_len[cleanupFlatIndex] = 0;
+                    }
+                    i = i - len_val;
+                }
+            }
+
+            write_lz(subset) {
+                let i, j;
+                this.index_dest = 0;
+                this.bit_mask = 0;
+                this.bit_index = 0;
+
+                this.log(`=== Writing compressed data for subset ${subset} ===`);
+                this.write_bits(0xFE, subset + 1);
+                this.write_byte(this.data_src[0]);
+
+                this.compressionStats.literalCount = 0;
+                this.compressionStats.rleCount = 0;
+                this.compressionStats.matchCount = 0;
+
+                for (i = 1; i < this.index_src; i++) {
+                    const flatIndex = i * this.BIT_OFFSET_NBR + subset;
+                    if (this.optimals_len[flatIndex] > 0) {
+                        const segmentLen = this.optimals_len[flatIndex];
+                        const segmentOffset = this.optimals_offset[flatIndex];
+                        const segmentStartIndex = i - segmentLen + 1;
+
+                        if (segmentOffset === 0) {
+                            if (segmentLen === 1) {
+                                this.write_literal(this.data_src[segmentStartIndex]);
+                                this.log(`Wrote literal at ${i}: ${this.data_src[segmentStartIndex]}`);
+                                this.compressionStats.literalCount++;
+                            } else {
+                                this.write_literals_length(segmentLen);
+                                for (j = 0; j < segmentLen; j++) {
+                                    this.write_byte(this.data_src[segmentStartIndex + j]);
+                                }
+                                this.log(`Wrote RLE literals at ${i}: len=${segmentLen}`);
+                                this.compressionStats.rleCount++;
+                            }
+                        } else {
+                            this.write_doublet(segmentLen, segmentOffset);
+                            this.log(`Wrote match at ${i}: len=${segmentLen}, offset=${segmentOffset}`);
+                            this.compressionStats.matchCount++;
+                        }
+                    }
+                }
+                this.write_end();
+                this.log(`=== Compression complete: ${this.compressionStats.literalCount} literals, ${this.compressionStats.rleCount} RLE, ${this.compressionStats.matchCount} matches ===`);
+            }
+
+            async compress(inputData, progressCallback = null) {
+                if (inputData.length > this.MAX) {
+                    throw new Error(`Input too large: ${inputData.length} > ${this.MAX}`);
+                }
+
+                this.index_src = inputData.length;
+                this.index_dest = 0;
+                this.bit_mask = 0;
+                this.bit_index = 0;
+                this.data_src.set(inputData);
+
+                this.debugLog = [];
+                this.compressionStats = {
+                    bestSubset: -1,
+                    subsetCosts: [],
+                    totalMatches: 0,
+                    literalCount: 0,
+                    rleCount: 0,
+                    matchCount: 0,
+                    costBreakdown: {},
+                    decisionLog: []
+                };
+
+                this.reset_matches();
+                
+                this.optimals_bits.fill(0xFFFFFFFF);
+                this.optimals_offset.fill(0);
+                this.optimals_len.fill(0);
+
+                for (let i = 0; i < this.BIT_OFFSET_NBR; i++) {
+                    const flatIndex = 0 * this.BIT_OFFSET_NBR + i;
+                    this.optimals_bits[flatIndex] = 8;
+                    this.optimals_offset[flatIndex] = 0;
+                    this.optimals_len[flatIndex] = 1;
+                }
+
+                this.log(`=== Starting compression of ${this.index_src} bytes ===`);
+
+                let prev_match_index = -1;
+                let i = 1;
+                
+                while (i < this.index_src) {
+                    if (this.bVerbose && i % 1000 === 0) {
+                        console.log(`Scan : ${i + 1} bytes`);
+                    }
+                    
+                    if (progressCallback && i % 1000 === 0) {
+                        await progressCallback(i, this.index_src);
+                    }
+
+                    this.log(`\n--- Processing position ${i} (byte: 0x${this.data_src[i].toString(16).padStart(2, '0')}) ---`);
+
+                    this.update_optimal(i, 1, 0);
+
+                    if (this.bRLE) {
+                        if (i >= this.RAW_MIN) {
+                            let j_rle = this.RAW_MAX;
+                            if (j_rle > i) j_rle = i;
+                            
+                            this.log(`RLE: testing lengths from ${this.RAW_MIN} to ${j_rle}`);
+                            if (this.RAW_MIN === 1) {
+                                for (let k_rle = j_rle; k_rle > this.RAW_MIN; k_rle--) {
+                                    this.update_optimal(i, k_rle, 0);
+                                }
+                            } else {
+                                for (let k_rle = j_rle; k_rle >= this.RAW_MIN; k_rle--) {
+                                    this.update_optimal(i, k_rle, 0);
+                                }
+                            }
+                        }
+                    }
+
+                    prev_match_index = this.findMatches(i, prev_match_index);
+                    i++;
+                }
+
+                this.log("=== Scan complete, evaluating best subsets ===");
+
+                let bestOverallCompressedData = null;
+                let minOverallCompressedSize = Infinity;
+                let bestOverallSubsetIndex = -1;
+
+                this.compressionStats.subsetCosts = [];
+                for (let idx = 0; idx < this.BIT_OFFSET_NBR_ALLOWED; idx++) {
+                    const bits_at_end = this.optimals_bits[(this.index_src - 1) * this.BIT_OFFSET_NBR + idx];
+                    this.compressionStats.subsetCosts.push({
+                        subset: idx,
+                        bits: bits_at_end,
+                        offsetBits: this.BIT_OFFSET_MIN + idx,
+                        bytes: Math.ceil(bits_at_end / 8),
+                        isFinite: (bits_at_end !== 0xFFFFFFFF)
+                    });
+                }
+
+                const validCandidates = this.compressionStats.subsetCosts.filter(s => s.isFinite)
+                                            .sort((a, b) => a.bits - b.bits);
+
+                const candidatesToTry = Math.min(validCandidates.length, 3);
+
+                for (let k = 0; k < candidatesToTry; k++) {
+                    const candidate = validCandidates[k];
+                    const candidateSubsetIndex = candidate.subset;
+
+                    this.log(`--- Attempting to write with Subset ${candidateSubsetIndex} (${candidate.offsetBits} offset bits) ---`);
+
+                    this.index_dest = 0;
+                    this.bit_mask = 0;
+                    this.bit_index = 0;
+
+                    const originalOptimalsBits = new Uint32Array(this.optimals_bits);
+                    const originalOptimalsOffset = new Uint16Array(this.optimals_offset);
+                    const originalOptimalsLen = new Uint8Array(this.optimals_len);
+
+                    this.set_BIT_OFFSET3(candidateSubsetIndex);
+                    this.cleanup_optimals(candidateSubsetIndex);
+                    this.write_lz(candidateSubsetIndex);
+
+                    const currentCompressedData = new Uint8Array(this.data_dest.slice(0, this.index_dest));
+                    const currentCompressedSize = currentCompressedData.length;
+
+                    if (currentCompressedSize < minOverallCompressedSize) {
+                        minOverallCompressedSize = currentCompressedSize;
+                        bestOverallCompressedData = currentCompressedData;
+                        bestOverallSubsetIndex = candidateSubsetIndex;
+                    }
+                    
+                    this.log(`Subset ${candidateSubsetIndex} resulted in ${currentCompressedSize} bytes.`);
+
+                    this.optimals_bits.set(originalOptimalsBits);
+                    this.optimals_offset.set(originalOptimalsOffset);
+                    this.optimals_len.set(originalOptimalsLen);
+                }
+
+                if (bestOverallCompressedData === null) {
+                    throw new Error("Could not compress data. All subsets resulted in infinite cost or no valid output.");
+                }
+
+                this.compressionStats.bestSubset = bestOverallSubsetIndex;
+                const bestOffsetBits = this.BIT_OFFSET_MIN + bestOverallSubsetIndex;
+                
+                this.log(`=== FINAL BEST: Subset ${bestOverallSubsetIndex} (${bestOffsetBits} offset bits) with ${minOverallCompressedSize} bytes ===`);
+
+                this.set_BIT_OFFSET3(bestOverallSubsetIndex);
+                this.cleanup_optimals(bestOverallSubsetIndex);
+                this.write_lz(bestOverallSubsetIndex);
+
+                return bestOverallCompressedData;
+            }
+
+            decompress(compressedData) {
+                this.index_src = 0;
+                this.index_dest = 0;
+                this.bit_mask = 0;
+                this.bit_index = 0;
+
+                this.data_src.set(compressedData);
+                let old_index_src = compressedData.length;
+
+                let subset = 0;
+                let len, offset;
+                let i;
+
+                while (this.read_bit() !== 0) {
+                    subset++;
+                }
+                if (this.bVerbose) console.log(`MODE ${subset + this.BIT_OFFSET_MIN}.`);
+
+                this.write_byte(this.read_byte());
+
+                while (this.index_src < old_index_src) {
+                    if (this.read_bit()) {
+                        this.write_byte(this.read_byte());
+                    } else {
+                        len = this.read_golomb_gamma();
+                        if (len === -1) {
+                            if (this.read_bit() === 0) {
+                                break;
+                            } else {
+                                len = this.read_byte() + 1;
+                                for (i = 0; i < len; i++) {
+                                    this.write_byte(this.read_byte());
+                                }
+                            }
+                        } else {
+                            offset = 0;
+
+                            if (len === 1) {
+                                if (this.read_bit()) {
+                                    offset = this.read_bit() + 1;
+                                } else {
+                                    offset = 0;
+                                }
+                            } else {
+                                if (!this.read_bit()) {
+                                    offset = this.read_byte() + 32;
+                                } else {
+                                    if (this.read_bit()) {
+                                        for (i = 0; i < subset + this.BIT_OFFSET_MIN - 8; i++) {
+                                            offset <<= 1;
+                                            offset |= this.read_bit();
+                                        }
+                                        offset <<= 8;
+                                        offset |= this.read_byte();
+                                        offset += 256 + 32;
+                                    } else {
+                                        for (i = 0; i < 5; i++) {
+                                            offset <<= 1;
+                                            offset |= this.read_bit();
+                                        }
+                                    }
+                                }
+                            }
+
+                            const currentDestIndex = this.index_dest;
+                            const sourceStartIndex = currentDestIndex - offset - 1; 
+
+                            if (sourceStartIndex < 0) {
+                                throw new Error(`Decompression error: Invalid source start index. ` +
+                                                `Source start: ${sourceStartIndex}, Current dest index: ${currentDestIndex}, Offset: ${offset}, Length: ${len}, Subset: ${subset}`);
+                            }
+
+                            for (let k = 0; k < len; k++) {
+                                this.data_dest[currentDestIndex + k] = this.data_dest[sourceStartIndex + k];
+                            }
+                            this.index_dest += len;
+                        }
+                    }
+                }
+                return new Uint8Array(this.data_dest.slice(0, this.index_dest));
+            }
+
+            set_max_bits_allowed(bits) {
+                if (bits > this.BIT_OFFSET_MAX) bits = this.BIT_OFFSET_MAX;
+                if (bits < this.BIT_OFFSET_MIN) bits = this.BIT_OFFSET_MIN;
+                this.BIT_OFFSET_MAX_ALLOWED = bits;
+                this.BIT_OFFSET_NBR_ALLOWED = this.BIT_OFFSET_MAX_ALLOWED - this.BIT_OFFSET_MIN + 1;
+                this.log(`Max bits allowed set to ${bits}, NBR_ALLOWED = ${this.BIT_OFFSET_NBR_ALLOWED}`);
+            }
+
+            setVerbose(verbose) { this.bVerbose = verbose; }
+            setFastMode(fast) { this.bFAST = fast; }
+            setRLE(enable) { this.bRLE = enable; }
+            setDebug(debug) { this.bDebug = debug; }
+            getCompressionStats() { return this.compressionStats; }
+            getDebugLog() { return this.debugLog.join('\n'); }
+        }
+
+        // CRC-32 Implementation
+        const crc32Table = new Uint32Array(256);
+        function buildCrc32Table() {
+            const polynomial = 0xEDB88320;
+            for (let i = 0; i < 256; i++) {
+                let crc = i;
+                for (let j = 0; j < 8; j++) {
+                    if (crc & 1) {
+                        crc = (crc >>> 1) ^ polynomial;
+                    } else {
+                        crc >>>= 1;
+                    }
+                }
+                crc32Table[i] = crc;
+            }
+        }
+        buildCrc32Table();
+
+        function calculateCrc32(data) {
+            let crc = 0xFFFFFFFF;
+            for (let i = 0; i < data.length; i++) {
+                crc = (crc >>> 8) ^ crc32Table[(crc ^ data[i]) & 0xFF];
+            }
+            return (crc ^ 0xFFFFFFFF) >>> 0;
+        }
+
+        // DOM Elements
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileNameSpan = document.getElementById('fileName');
+        const verboseFlag = document.getElementById('verboseFlag');
+        const rleFlag = document.getElementById('rleFlag');
+        const fastFlag = document.getElementById('fastFlag');
+        const debugFlag = document.getElementById('debugFlag');
+        const maxBitsInput = document.getElementById('maxBitsInput');
+        const compressCButton = document.getElementById('compressCButton');
+        const compressJSButton = document.getElementById('compressJSButton');
+        const decompressJSButton = document.getElementById('decompressJSButton');
+        const downloadCompressedButton = document.getElementById('downloadCompressedButton');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const debugInfo = document.getElementById('debugInfo');
+        const debugText = document.getElementById('debugText');
+        const originalDataHex = document.getElementById('originalDataHex');
+        const compressedDataHex = document.getElementById('compressedDataHex');
+        const decompressedDataHex = document.getElementById('decompressedDataHex');
+        const validationResult = document.getElementById('validationResult');
+        const originalSizeSpan = document.getElementById('originalSize');
+        const compressedSize = document.getElementById('compressedSize');
+        const compressionRatio = document.getElementById('compressionRatio');
+        const originalCrcSpan = document.getElementById('originalCrc');
+        const decompressedCrc = document.getElementById('decompressedCrc');
+        const decompressedSize = document.getElementById('decompressedSize'); 
+        const statusMessageDiv = document.getElementById('statusMessage'); 
+        const messageModal = document.getElementById('messageModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const closeModalButton = document.querySelector('.close-button');
+        const optimizationInfo = document.getElementById('optimizationInfo');
+        const subsetInfo = document.getElementById('subsetInfo');
+        const costInfo = document.getElementById('costInfo');
+
+        let originalFileData = null;
+        let compressedFileData = null;
+        let dan3CodecJS = new DAN3CodecDebug();
+
+        // Utility Functions
+        function showModal(message) {
+            modalMessage.textContent = message;
+            messageModal.style.display = 'flex';
+        }
+
+        closeModalButton.onclick = function() {
+            messageModal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == messageModal) {
+                messageModal.style.display = 'none';
+            }
+        }
+
+        function displayStatus(message, type) {
+            if (statusMessageDiv) {
+                statusMessageDiv.textContent = message;
+                statusMessageDiv.className = `status-message ${type}`;
+                statusMessageDiv.classList.remove('hidden');
+            }
+        }
+
+        function clearResults() {
+            originalDataHex.textContent = '';
+            compressedDataHex.textContent = '';
+            decompressedDataHex.textContent = '';
+            validationResult.textContent = '';
+            originalSizeSpan.textContent = '0';
+            compressedSize.textContent = '0';
+            compressionRatio.textContent = '0.00%';
+            originalCrcSpan.textContent = 'N/A';
+            decompressedCrc.textContent = 'N/A';
+            statusMessageDiv.classList.add('hidden');
+            downloadCompressedButton.disabled = true;
+            progressContainer.classList.add('hidden');
+            debugInfo.classList.add('hidden');
+        }
+
+        function arrayToHex(arr) {
+            if (!arr) return '';
+            const hexString = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join(' ');
+            return hexString.length > 500 ? hexString.substring(0, 500) + '...' : hexString;
+        }
+
+        function updateProgress(current, total) {
+            const percentage = (current / total) * 100;
+            progressFill.style.width = `${percentage}%`;
+            progressText.textContent = `Processing: ${current}/${total} bytes (${percentage.toFixed(1)}%)`;
+        }
+
+        function handleFile(file) {
+            if (file) {
+                fileNameSpan.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    originalFileData = new Uint8Array(e.target.result);
+                    originalDataHex.textContent = arrayToHex(originalFileData);
+                    originalSizeSpan.textContent = originalFileData.length;
+                    originalCrcSpan.textContent = '0x' + calculateCrc32(originalFileData).toString(16).toUpperCase();
+                    
+                    compressCButton.disabled = false;
+                    compressJSButton.disabled = false;
+                    decompressJSButton.disabled = true;
+                    downloadCompressedButton.disabled = true;
+
+                    compressedFileData = null;
+                    clearResults();
+                    originalDataHex.textContent = arrayToHex(originalFileData);
+                    originalSizeSpan.textContent = originalFileData.length;
+                    originalCrcSpan.textContent = '0x' + calculateCrc32(originalFileData).toString(16).toUpperCase();
+                    displayStatus('File loaded. Ready for compression.', 'info');
+                };
+                reader.onerror = () => {
+                    showModal('Error reading file.');
+                    fileNameSpan.textContent = 'No file chosen';
+                    originalFileData = null;
+                    compressCButton.disabled = true;
+                    compressJSButton.disabled = true;
+                    decompressJSButton.disabled = true;
+                    downloadCompressedButton.disabled = true;
+                    clearResults();
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                fileNameSpan.textContent = 'No file chosen';
+                originalFileData = null;
+                compressCButton.disabled = true;
+                compressJSButton.disabled = true;
+                decompressJSButton.disabled = true;
+                downloadCompressedButton.disabled = true;
+                clearResults();
+                displayStatus('No file selected.', 'info');
+            }
+        }
+
+        // C Module Initialization
+        async function initializeCModule() {
+            if (!cModule) {
+                displayStatus('Loading C/Wasm module...', 'info');
+                try {
+                    // Vérifier que createDan3Module est disponible
+                    if (typeof createDan3Module === 'undefined') {
+                        throw new Error('createDan3Module not found. Make sure dan3final.js is loaded.');
+                    }
+                    
+                    cModule = await createDan3Module({
+                        print: (text) => console.log('C-stdout:', text),
+                        printErr: (text) => console.error('C-stderr:', text),
+                        onAbort: (what) => {
+                            console.error('C module aborted:', what);
+                            displayStatus('C/Wasm module crashed. Check console for details.', 'error');
+                        },
+                        onRuntimeInitialized: () => {
+                            console.log('C runtime initialized');
+                        }
+                    });
+                    console.log("C/Wasm module loaded successfully.");
+                    
+                    if (!cModule._set_dan3_options) {
+                        throw new Error("Essential C functions not exported properly");
+                    }
+                    
+                    displayStatus('C/Wasm module ready!', 'success');
+                } catch (error) {
+                    console.error('C module initialization error:', error);
+                    showModal(`Error loading C/Wasm module: ${error.message}. Make sure dan3final.wasm is in the same directory.`);
+                    displayStatus('Failed to load C/Wasm module.', 'error');
+                }
+            }
+        }
+
+        // Main execution
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initializeCModule();
+            clearResults();
+            displayStatus('Load a file to test DAN3 compression (C/Wasm or JS) + decompression (JS).', 'info');
+
+            // Event listeners
+            dropArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropArea.classList.add('highlight');
+            });
+
+            dropArea.addEventListener('dragleave', () => {
+                dropArea.classList.remove('highlight');
+            });
+
+            dropArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropArea.classList.remove('highlight');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            });
+
+            compressJSButton.addEventListener('click', async () => {
+                if (!originalFileData) {
+                    showModal('Please load a file first.');
+                    return;
+                }
+
+                // Check file size limit for JavaScript implementation
+                if (originalFileData.length > 256 * 1024) {
+                    showModal(`File too large: ${originalFileData.length} bytes (${(originalFileData.length/1024).toFixed(1)}KB). Current limit: 256KB.`);
+                    return;
+                }
+
+                dan3CodecJS = new DAN3CodecDebug();
+                dan3CodecJS.setVerbose(verboseFlag.checked);
+                dan3CodecJS.setRLE(rleFlag.checked);
+                dan3CodecJS.setFastMode(fastFlag.checked);
+                dan3CodecJS.setDebug(debugFlag.checked);
+                dan3CodecJS.set_max_bits_allowed(parseInt(maxBitsInput.value));
+
+                try {
+                    displayStatus('Compressing with JavaScript (Fallback)...', 'info');
+                    progressContainer.classList.remove('hidden');
+                    
+                    const progressCallback = async (current, total) => {
+                        updateProgress(current, total);
+                        await new Promise(resolve => setTimeout(resolve, 0));
+                    };
+
+                    compressedFileData = await dan3CodecJS.compress(originalFileData, progressCallback);
+                    
+                    const stats = dan3CodecJS.getCompressionStats();
+                    
+                    compressedDataHex.textContent = arrayToHex(compressedFileData);
+                    compressedSize.textContent = compressedFileData.length;
+
+                    const ratio = (compressedFileData.length / originalFileData.length) * 100;
+                    compressionRatio.textContent = `${ratio.toFixed(2)}%`;
+
+                    if (debugFlag.checked) {
+                        debugText.textContent = dan3CodecJS.getDebugLog();
+                        debugInfo.classList.remove('hidden');
+                    } else {
+                        debugInfo.classList.add('hidden');
+                    }
+
+                    decompressJSButton.disabled = false;
+                    downloadCompressedButton.disabled = false;
+                    progressContainer.classList.add('hidden');
+                    displayStatus('🔧 JavaScript Compression completed! (Fallback mode)', 'success');
+                } catch (error) {
+                    console.error('JS Compression error:', error);
+                    showModal(`JS Compression error: ${error.message}`);
+                    displayStatus('JS Compression failed.', 'error');
+                    compressedFileData = null;
+                    decompressJSButton.disabled = true;
+                    downloadCompressedButton.disabled = true;
+                    progressContainer.classList.add('hidden');
+                }
+            });
+
+            fileInput.addEventListener('change', (event) => {
+                handleFile(event.target.files[0]);
+            });
+
+            compressCButton.addEventListener('click', async () => {
+                if (!originalFileData) {
+                    showModal('Please load a file first.');
+                    return;
+                }
+                if (!cModule) {
+                    showModal('C/Wasm module not loaded or initialized yet. Please wait or refresh.');
+                    return;
+                }
+
+                try {
+                    displayStatus('Compressing with C/Wasm...', 'info');
+
+                    const inputSize = originalFileData.length;
+                    
+                    if (inputSize > 256 * 1024) {
+                        throw new Error(`File too large for compiled C code: ${inputSize} bytes > 256KB`);
+                    }
+                    
+                    console.log(`C Compression: inputSize=${inputSize} (${(inputSize/1024).toFixed(1)}KB)`);
+                    
+                    // Copy data directly to the C global data_src array
+                    const dataSrcPtr = cModule._data_src;
+                    if (!dataSrcPtr) {
+                        throw new Error("C data_src global array not found.");
+                    }
+                    
+                    console.log(`Copying data to C global array at ${dataSrcPtr}`);
+                    cModule.HEAPU8.set(originalFileData, dataSrcPtr);
+                    
+                    // Set the input size in C's global index_src variable
+                    const indexSrcPtr = cModule._index_src;
+                    if (!indexSrcPtr) {
+                        throw new Error("C index_src global variable not found.");
+                    }
+                    cModule.HEAP32[indexSrcPtr >> 2] = inputSize;
+                    console.log(`Set C index_src to ${inputSize}`);
+                    
+                    // Reset matches if available
+                    if (cModule._reset_matches) {
+                        console.log('Resetting C matches...');
+                        cModule._reset_matches();
+                    }
+                    
+                    // Set options
+                    console.log('Setting C options...');
+                    cModule._set_dan3_options(
+                        parseInt(maxBitsInput.value),
+                        rleFlag.checked ? -1 : 0,
+                        fastFlag.checked ? -1 : 0
+                    );
+                    console.log('C options set successfully');
+
+                    console.log('Calling C encode function...');
+                    const compressedLengthC = cModule._encode();
+                    console.log(`C encode returned: ${compressedLengthC}`);
+
+                    if (compressedLengthC === -1) {
+                         throw new Error("C compression failed (input too large or other internal error).");
+                    }
+                    if (compressedLengthC < 0) {
+                         throw new Error(`C compression returned unexpected negative length: ${compressedLengthC}`);
+                    }
+
+                    // Retrieve compressed data from C's global data_dest array
+                    const dataDestPtr = cModule._data_dest;
+                    const indexDestPtr = cModule._index_dest;
+                    
+                    const actualCompressedLength = cModule.HEAP32[indexDestPtr >> 2];
+                    console.log(`Actual compressed length from index_dest: ${actualCompressedLength}`);
+                    
+                    compressedFileData = new Uint8Array(cModule.HEAPU8.slice(dataDestPtr, dataDestPtr + actualCompressedLength));
+
+                    compressedDataHex.textContent = arrayToHex(compressedFileData);
+                    compressedSize.textContent = compressedFileData.length;
+                    const ratioC = (compressedFileData.length / originalFileData.length) * 100;
+                    compressionRatio.textContent = `${ratioC.toFixed(2)}%`;
+
+                    decompressJSButton.disabled = false;
+                    downloadCompressedButton.disabled = false;
+                    displayStatus('C/Wasm Compression completed!', 'success');
+
+                } catch (error) {
+                    console.error('C Compression error:', error);
+                    showModal(`C/Wasm Compression error: ${error.message}`);
+                    displayStatus('C/Wasm Compression failed.', 'error');
+                    compressedFileData = null;
+                    decompressJSButton.disabled = true;
+                    downloadCompressedButton.disabled = true;
+                    progressContainer.classList.add('hidden');
+                }
+            });
+
+            downloadCompressedButton.addEventListener('click', () => {
+                if (compressedFileData) {
+                    const blob = new Blob([compressedFileData], { type: 'application/octet-stream' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const originalName = fileNameSpan.textContent.split('.').slice(0, -1).join('.');
+                    a.download = `${originalName || 'compressed_file'}.dan3`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } else {
+                    showModal('No compressed data available to download.');
+                }
+            });
+
+            decompressJSButton.addEventListener('click', () => {
+                if (!compressedFileData) {
+                    showModal('Please compress a file first.');
+                    return;
+                }
+
+                dan3CodecJS = new DAN3CodecDebug();
+                dan3CodecJS.setVerbose(verboseFlag.checked);
+                dan3CodecJS.setDebug(debugFlag.checked);
+
+                try {
+                    displayStatus('Decompressing with JavaScript...', 'info');
+                    const decompressedData = dan3CodecJS.decompress(compressedFileData);
+                    decompressedDataHex.textContent = arrayToHex(decompressedData);
+                    decompressedSize.textContent = decompressedData.length;
+                    decompressedCrc.textContent = '0x' + calculateCrc32(decompressedData).toString(16).toUpperCase();
+
+                    const sizesMatch = originalFileData.length === decompressedData.length;
+                    const originalCrc = calculateCrc32(originalFileData);
+                    const decompressedCrcValue = calculateCrc32(decompressedData);
+                    const crcsMatch = originalCrc === decompressedCrcValue;
+
+                    if (sizesMatch && crcsMatch) {
+                        validationResult.textContent = 'Validation: SUCCESS! Original and decompressed data match perfectly.';
+                        validationResult.style.color = '#16a34a';
+                        displayStatus('Decompression successful and validated!', 'success');
+                    } else {
+                        let message = 'Validation: FAILED!\n';
+                        if (!sizesMatch) {
+                            message += `Size mismatch: ${originalFileData.length} vs ${decompressedData.length}\n`;
+                        }
+                        if (!crcsMatch) {
+                            message += `CRC mismatch: 0x${originalCrc.toString(16).toUpperCase()} vs 0x${decompressedCrcValue.toString(16).toUpperCase()}`;
+                        }
+                        validationResult.textContent = message;
+                        validationResult.style.color = '#dc2626';
+                        displayStatus('Decompression validation failed.', 'error');
+                    }
+
+                    if (debugFlag.checked) {
+                        debugText.textContent = dan3CodecJS.getDebugLog();
+                        debugInfo.classList.remove('hidden');
+                    } else {
+                        debugInfo.classList.add('hidden');
+                    }
+                } catch (error) {
+                    console.error('JS Decompression error:', error);
+                    showModal(`JS Decompression error: ${error.message}`);
+                    displayStatus('JS Decompression failed.', 'error');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
